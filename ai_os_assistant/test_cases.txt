@@ -1,0 +1,5 @@
+- Create a file called test.txt
+- Write "Hello World" to test.txt
+- Create 3 files named alpha.txt, beta.txt, and gamma.txt
+- Create a file for each letter of the alphabet
+- Append the line "Appended text" to test.txt

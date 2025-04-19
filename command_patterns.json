@@ -1,0 +1,26 @@
+{
+  "create_file": [
+    {
+      "pattern": "Create a file named {filename}",
+      "intent_template": {
+        "action": "create_file",
+        "filename": "test.txt"
+      },
+      "variables": [
+        "filename"
+      ]
+    }
+  ],
+  "file_creation": [
+    {
+      "pattern": "Make me a file called {filename}",
+      "intent_template": {
+        "action": "run_code",
+        "code": "open('{filename}', 'w').close()"
+      },
+      "variables": [
+        "filename"
+      ]
+    }
+  ]
+}
