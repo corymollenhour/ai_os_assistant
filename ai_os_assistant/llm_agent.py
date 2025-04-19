@@ -46,28 +46,55 @@ def parse_prompt(prompt: str) -> dict:
         content = "".join(content_parts)
         log(f"Reconstructed assistant content: {content}")
 
-        # Extract first JSON-like block from the content using a more precise pattern
-        # Look for standalone JSON objects or ones with proper JSON formatting
-        match = re.search(r'(\{(?:[^{}]|(?:\{(?:[^{}]|(?:\{[^{}]*\}))*\}))*\})', content, re.DOTALL)
-        if not match:
-            raise ValueError("No JSON object found in assistant's content")
-        
-        # Get the JSON string and clean it
-        json_str = match.group(0).strip()
-        
+        # Try the simplest approach first - find the outermost JSON object
         try:
-            # Try to parse the extracted JSON
-            return json.loads(json_str)
+            # Look for complete JSON objects with proper start/end structure
+            json_start = content.find('{')
+            if json_start != -1:
+                # Count braces to find the matching closing brace
+                brace_count = 1
+                pos = json_start + 1
+                while pos < len(content) and brace_count > 0:
+                    if content[pos] == '{':
+                        brace_count += 1
+                    elif content[pos] == '}':
+                        brace_count -= 1
+                    pos += 1
+                
+                if brace_count == 0:  # We found a complete, balanced JSON object
+                    json_str = content[json_start:pos]
+                    # Pre-process f-strings to protect them from JSON parser
+                    # Replace f'...' or f"..." patterns temporarily
+                    processed_json = re.sub(r"f(['\"])(.*?)\1", r"\1\2\1", json_str)
+                    return json.loads(processed_json)
         except json.JSONDecodeError as e:
-            log(f"!! JSON parsing error: {e} in string: {json_str}")
-            # Fall back to a simpler extract if the complex regex fails
+            log(f"!! JSON parsing error with brace matching approach: {e}")
+        
+        # If that failed, try the regex approach that worked for some cases
+        try:
+            match = re.search(r'(\{(?:[^{}]|(?:\{(?:[^{}]|(?:\{[^{}]*\}))*\}))*\})', content, re.DOTALL)
+            if match:
+                json_str = match.group(0).strip()
+                # Pre-process any f-strings
+                processed_json = re.sub(r"f(['\"])(.*?)\1", r"\1\2\1", json_str)
+                return json.loads(processed_json)
+        except json.JSONDecodeError as e:
+            log(f"!! JSON parsing error with regex approach: {e} in string: {json_str}")
+        
+        # Final fallback - aggressively look for just the first JSON-like structure
+        try:
             simple_match = re.search(r'\{.*?\}', content, re.DOTALL)
             if simple_match:
-                try:
-                    return json.loads(simple_match.group(0))
-                except:
-                    pass
-            raise
+                json_str = simple_match.group(0)
+                # Pre-process any f-strings
+                processed_json = re.sub(r"f(['\"])(.*?)\1", r"\1\2\1", json_str)
+                return json.loads(processed_json)
+        except Exception as e:
+            log(f"!! All JSON extraction methods failed: {e}")
+            
+        # If we got here, none of our approaches worked
+        log("!! Could not extract valid JSON from: " + content)
+        raise ValueError("No valid JSON object found in assistant's content")
 
     except requests.exceptions.ConnectionError:
         log("!! Ollama is not running on localhost:11434.")
