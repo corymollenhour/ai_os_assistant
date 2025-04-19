@@ -94,11 +94,11 @@ class CommandStore:
         # Different extraction rules based on category
         if category == "file_creation":
             # Look for filenames in commands
-            filenames = re.findall(r'\b[\w\-\.]+\.(txt|doc|pdf|csv|xlsx?|json|html?|css|js|py|java|cpp|c|go|rs|php)\b', command)
+            filenames = re.findall(r'\b([\w\-\.]+\.(txt|doc|docx|pdf|csv|xlsx?|json|html?|css|js|py|java|cpp|c|go|rs|php))\b', command)
             if filenames:
                 variables.append({
                     "name": "filename",
-                    "value": filenames[0]
+                    "value": filenames[0][0]  # Get the full filename, not just the extension
                 })
         
         elif category == "open_webpage":
@@ -152,6 +152,16 @@ class CommandStore:
                     "name": "number",
                     "value": numbers[0]
                 })
+            
+            # For search queries with no special pattern
+            if category == "search_query":
+                # Try to extract everything after "search for" or similar phrases
+                match = re.search(r'(?:search for|find|look up|google|search)\s+(.+?)(?:\s+in|\s+on|\s+with|$)', command.lower())
+                if match:
+                    variables.append({
+                        "name": "query",
+                        "value": match.group(1).strip()
+                    })
         
         return variables
     
@@ -274,7 +284,14 @@ class CommandStore:
     
     def similarity_score(self, s1: str, s2: str) -> float:
         """Calculate the similarity between two strings using sequence matching."""
-        return SequenceMatcher(None, s1.lower(), s2.lower()).ratio()
+        # Normalize the strings by lowercasing and removing common words
+        common_words = {"a", "an", "the", "my", "your", "our", "their", "to", "for", "in", "on", "with", "by", "and", "or"}
+        
+        def normalize(text):
+            words = text.lower().split()
+            return " ".join([w for w in words if w not in common_words])
+            
+        return SequenceMatcher(None, normalize(s1), normalize(s2)).ratio()
     
     def find_best_raw_command_match(self, command: str, category: str) -> Optional[Tuple[dict, float]]:
         """Find the best matching raw command in a category based on similarity."""
@@ -290,7 +307,8 @@ class CommandStore:
                 score = self.similarity_score(command, raw_command)
                 
                 # Consider it a match if the similarity is high enough
-                if score > 0.8 and score > best_score:
+                # Lower the threshold to catch more similar commands
+                if score > 0.7 and score > best_score:
                     best_score = score
                     best_pattern = pattern_data
         
@@ -310,52 +328,63 @@ class CommandStore:
             Tuple of (intent, variables) if a match is found, None otherwise.
         """
         # First, try to detect the command category
-        category = self.detect_category(command)
+        primary_category = self.detect_category(command)
         
-        # Try to match against patterns in this category
-        if category in self.patterns:
-            # First try exact pattern matching
-            for pattern_data in self.patterns[category]:
-                if "variables" not in pattern_data:
-                    continue
+        # Also check file_creation when category is uncertain
+        categories_to_check = [primary_category]
+        if primary_category == "custom_command":
+            # Add other common categories to check
+            categories_to_check.extend(["file_creation", "open_webpage", "search_query"])
+        
+        # Try to match against patterns in each category to check
+        for category in categories_to_check:
+            if category in self.patterns:
+                # First try exact pattern matching
+                for pattern_data in self.patterns[category]:
+                    if "variables" not in pattern_data:
+                        continue
+                        
+                    pattern_str = pattern_data["pattern"]
+                    variables = pattern_data["variables"]
                     
-                pattern_str = pattern_data["pattern"]
-                variables = pattern_data["variables"]
+                    # Skip raw commands (no variables)
+                    if not variables:
+                        continue
+                    
+                    # Convert pattern to regex with more flexible matching
+                    regex_pattern = re.escape(pattern_str)
+                    for var in variables:
+                        placeholder = re.escape(f"{{{var}}}")
+                        regex_pattern = regex_pattern.replace(placeholder, f"(?P<{var}>.+?)")
+                    
+                    # Make matching more flexible
+                    # Allow any whitespace between words
+                    regex_pattern = regex_pattern.replace("\\ ", r"\s+")
+                    
+                    match = re.match(f"^{regex_pattern}$", command, re.IGNORECASE)
+                    if match:
+                        # Extract variables
+                        extracted_vars = match.groupdict()
+                        
+                        # Create intent using the template and extracted variables
+                        intent = pattern_data["intent_template"].copy()
+                        
+                        # Replace variables in all intent fields
+                        for key, value in intent.items():
+                            if isinstance(value, str):
+                                for var, var_value in extracted_vars.items():
+                                    if f"{{{var}}}" in value:
+                                        intent[key] = value.replace(f"{{{var}}}", var_value)
+                        
+                        return intent, extracted_vars
                 
-                # Skip raw commands (no variables)
-                if not variables:
-                    continue
-                
-                # Convert pattern to regex
-                regex_pattern = re.escape(pattern_str)
-                for var in variables:
-                    placeholder = re.escape(f"{{{var}}}")
-                    regex_pattern = regex_pattern.replace(placeholder, f"(?P<{var}>.+?)")
-                
-                match = re.match(f"^{regex_pattern}$", command)
-                if match:
-                    # Extract variables
-                    extracted_vars = match.groupdict()
-                    
-                    # Create intent using the template and extracted variables
-                    intent = pattern_data["intent_template"].copy()
-                    
-                    # Replace variables in all intent fields
-                    for key, value in intent.items():
-                        if isinstance(value, str):
-                            for var, var_value in extracted_vars.items():
-                                if f"{{{var}}}" in value:
-                                    intent[key] = value.replace(f"{{{var}}}", var_value)
-                    
-                    return intent, extracted_vars
-            
-            # If no exact match, try similarity matching for raw commands
-            raw_match = self.find_best_raw_command_match(command, category)
-            if raw_match:
-                pattern_data, score = raw_match
-                log(f"Found similar command match with score {score}: {pattern_data['raw_command']}")
-                print(f"🔍 Using similar command match ({int(score*100)}% similar)")
-                return pattern_data["intent_template"], {}
+                # If no exact match, try similarity matching for raw commands
+                raw_match = self.find_best_raw_command_match(command, category)
+                if raw_match:
+                    pattern_data, score = raw_match
+                    log(f"Found similar command match with score {score}: {pattern_data['raw_command']}")
+                    print(f"🔍 Using similar command match ({int(score*100)}% similar)")
+                    return pattern_data["intent_template"], {}
         
         # Try other categories as a fallback (commands might be miscategorized)
         for other_category, patterns in self.patterns.items():
