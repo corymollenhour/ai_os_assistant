@@ -1,0 +1,28 @@
+{
+  "file_creation": [
+    {
+      "pattern": "Create a file named {filename}",
+      "intent_template": {
+        "action": "run_code",
+        "code": "open('{filename}', 'w').close()"
+      },
+      "variables": [
+        "filename"
+      ],
+      "example_command": "Create a file named Cory.txt"
+    }
+  ],
+  "open_webpage": [
+    {
+      "pattern": "Generate Python code using Selenium that:- Opens Chrome- Goes to {url}- Waits for page load- Types \"Hello world from my assistant\" in the post composer- Clicks the Tweet buttonAssume the user is already logged in. No markdown. Output as:{ \"action\": \"run_code\", \"code\": \"<python code>\" }.",
+      "intent_template": {
+        "action": "run_code",
+        "code": "from selenium import webdriver\nfrom selenium.webdriver.common.by import By\nfrom selenium.webdriver.common.keys import Keys\nfrom selenium.webdriver.support.ui import WebDriverWait\nfrom selenium.webdriver.support import expected_conditions as EC\n\ndriver = webdriver.Chrome(executable_path='chromedriver.exe')\ntry:\n    driver.get('{url}')\n    wait = WebDriverWait(driver, 10)\n    tweet_button = wait.until(EC.presence_of_element_located((By.ID, 'tweetButtonInline')))\n    post_composer = driver.find_element(By.ID, 'react-root')\n    post_composer.send_keys('Hello world from my assistant')\n    tweet_button.click()\n    sleep(5)\nfinally:\n    driver.close()"
+      },
+      "variables": [
+        "url"
+      ],
+      "example_command": "Generate Python code using Selenium that:- Opens Chrome- Goes to https://x.com- Waits for page load- Types \"Hello world from my assistant\" in the post composer- Clicks the Tweet buttonAssume the user is already logged in. No markdown. Output as:{ \"action\": \"run_code\", \"code\": \"<python code>\" }."
+    }
+  ]
+}
