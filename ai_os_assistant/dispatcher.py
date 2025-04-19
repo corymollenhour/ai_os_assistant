@@ -23,7 +23,7 @@ def dispatch_command(intent: dict, user_prompt: str = ""):
         else:
             log(f"Unknown action: {action} — falling back to LLM to generate code.")
             print(f"! Unknown action: '{action}', generating code via Ollama...")
-            generated = generate_code_for_action(intent, prompt)
+            generated = generate_code_for_action(intent, user_prompt)
             code = generated.get("code")
             if code:
                 log(f"Generated fallback code:\n{code}")
