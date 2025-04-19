@@ -7,6 +7,7 @@ A Python-based assistant that uses local LLMs to understand and execute system c
 - Natural language processing for system commands
 - File management operations (create, rename, sort)
 - Command pattern storage to reduce LLM wait times
+- Automatic command categorization and variable extraction
 - Extensible action system
 
 ## Setup Instructions
@@ -20,44 +21,60 @@ A Python-based assistant that uses local LLMs to understand and execute system c
 
 ## Command Pattern Storage
 
-The assistant includes a command pattern storage system that can recognize frequently used commands, reducing the need for LLM processing and cutting down wait times.
+The assistant includes an enhanced command pattern storage system that can recognize and store any type of command, automatically categorize it, extract variables, and reuse the pattern for similar future commands.
 
 ### How It Works
 
-1. When you enter a command, the system first checks if it matches a stored pattern
-2. If a match is found, it extracts variables (like filenames) and executes the command immediately
-3. If no match is found, it processes your command through the LLM as usual
-4. Certain command patterns are automatically identified and stored for future use
+1. **Automatic Storage**: By default, every command you use is stored (unless you use the `no store` command)
+2. **Command Categorization**: The system automatically categorizes commands (e.g., "open_webpage", "file_creation", "search_query")
+3. **Variable Extraction**: Variables like URLs, filenames, search terms are automatically identified and extracted
+4. **Pattern Matching**: When you enter a similar command, the system recognizes the pattern and extracts the new variables
+5. **Similarity Matching**: Even if the commands aren't exactly the same, the system can recognize similar commands
 
 ### Special Commands
 
 - `store last`: Store the most recent command as a pattern for future use
+- `no store`: Execute the next command without storing it as a pattern
 - `clear patterns`: Clear all stored command patterns
 
 ### Example Usage
 
+**Web Browsing Example:**
+
+1. First time: "Open my default browser to www.example.com"
+   - The system stores this as a pattern in the "open_webpage" category
+   - It extracts "www.example.com" as the {url} variable
+
+2. Later: "Open my default browser to www.github.com"
+   - The system recognizes this as matching the stored pattern
+   - It extracts "www.github.com" as the new URL 
+   - The command executes immediately (skipping the LLM)
+
+**File Creation Example:**
+
 1. First time: "Create a file named report.txt"
-   - The assistant will use the LLM to process this request
-   - It may automatically identify this as a file creation pattern
+   - The system stores this as a pattern in the "file_creation" category
+   - It extracts "report.txt" as the {filename} variable
 
-2. Later: "Create a file named budget.xlsx"
-   - The assistant will recognize this as matching the stored pattern
-   - It will extract "budget.xlsx" as the filename
-   - The command will execute immediately (skipping the LLM)
+2. Later: "Create a file named data.csv"
+   - The system recognizes this as matching the stored pattern
+   - It extracts "data.csv" as the new filename
+   - The command executes immediately (skipping the LLM)
 
-### Supported Pattern Types
+### Supported Pattern Categories
 
-The system can currently recognize and store patterns for:
+The system can automatically categorize and extract variables for many types of commands:
 
-- **File Creation**: Commands to create new files with different names
-- **File Renaming**: Commands to rename files with specific patterns
-- **File Sorting**: Commands to organize files into directories
+- **File Operations**: Creating, renaming, moving, or deleting files
+- **Web Operations**: Opening websites, searching online
+- **System Operations**: Launching programs, checking system status
+- **Custom Commands**: Any other type of command will be stored with its full content
 
-More pattern types will be added in future updates.
+More categories can be easily added by updating the `CATEGORY_KEYWORDS` dictionary in `command_store.py`.
 
 ## Extending the Assistant
 
 To add new command actions, modify the following files:
 - `dispatcher.py`: Add a new action handler
 - `file_manager.py`: Implement the actual functionality
-- `command_store.py`: Add pattern recognition for the new action
+- `command_store.py`: Add pattern recognition for the new action type
