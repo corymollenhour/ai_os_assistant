@@ -3,66 +3,103 @@ import json
 from command_store import CommandStore
 from utils import log
 
-def test_pattern_matching():
+def test_enhanced_pattern_matching():
+    """Test the enhanced command pattern matching system."""
     # Create a test command store
     store = CommandStore()
     
-    # Override the store file for testing
+    # Override the store patterns for testing
     store.patterns = {}
     
-    # Add a file creation pattern
-    create_file_command = "Create a file named test.txt"
-    create_file_intent = {
+    print("\n=== Testing Command Pattern Storage and Matching ===\n")
+    
+    # Test 1: Auto-categorization
+    print("--- Test 1: Command Categorization ---")
+    test_commands = [
+        "Open my default browser to www.example.com",
+        "Create a file named report.txt",
+        "Search for the best pizza recipes",
+        "Launch Notepad and open the config file",
+        "Delete all files in the temp directory",
+        "Rename file data.csv to data_old.csv"
+    ]
+    
+    for cmd in test_commands:
+        category = store.detect_category(cmd)
+        print(f"Command: '{cmd}'")
+        print(f"Detected category: '{category}'\n")
+    
+    # Test 2: Variable extraction
+    print("--- Test 2: Variable Extraction ---")
+    variable_test_commands = [
+        ("Open my default browser to www.example.com", "open_webpage"),
+        ("Create a file named test.txt", "file_creation"),
+        ("Search for quantum computing tutorials", "search_query"),
+    ]
+    
+    for cmd, category in variable_test_commands:
+        variables = store.extract_potential_variables(cmd, category)
+        print(f"Command: '{cmd}'")
+        print(f"Variables extracted: {variables}\n")
+    
+    # Test 3: Pattern creation and matching
+    print("--- Test 3: Pattern Storage and Matching ---")
+    
+    # Example intents for different commands
+    web_intent = {
+        "action": "run_code",
+        "code": "import webbrowser; webbrowser.open('www.example.com')"
+    }
+    
+    file_intent = {
         "action": "create_file",
         "filename": "test.txt"
     }
-    store.add_pattern(create_file_command, create_file_intent, store_command=True)
     
-    # Add a code pattern for file creation
-    code_command = "Make me a file called data.csv"
-    code_intent = {
+    search_intent = {
         "action": "run_code",
-        "code": "open('data.csv', 'w').close()"
+        "code": "import webbrowser; webbrowser.open('https://www.google.com/search?q=quantum+computing+tutorials')"
     }
-    store.add_pattern(code_command, code_intent, store_command=True)
     
-    # Test matching existing patterns
-    print("\n--- Testing pattern matching ---")
+    # Store patterns
+    test_storage = [
+        ("Open my default browser to www.example.com", web_intent),
+        ("Create a file named test.txt", file_intent),
+        ("Search for quantum computing tutorials", search_intent)
+    ]
     
-    # Test file creation pattern
-    new_command = "Create a file named report.docx"
-    match_result = store.match_command(new_command)
+    for cmd, intent in test_storage:
+        print(f"Storing command: '{cmd}'")
+        store.add_pattern(cmd, intent, store_command=True)
+        print()
     
-    if match_result:
-        intent, variables = match_result
-        print(f"✅ Matched: {new_command}")
-        print(f"  Intent: {intent}")
-        print(f"  Variables: {variables}")
-    else:
-        print(f"❌ Failed to match: {new_command}")
+    # Test matching with variations
+    test_matches = [
+        "Open my default browser to www.github.com",
+        "Create a file named report.docx",
+        "Search for machine learning basics",
+        # Similar but not exact
+        "Open my web browser to www.github.com",
+        # Non-matching command
+        "Reboot the system in 5 minutes"
+    ]
     
-    # Test code pattern
-    new_code_command = "Make me a file called users.json"
-    match_result = store.match_command(new_code_command)
+    print("\n--- Testing Pattern Matching with Variations ---")
+    for test_cmd in test_matches:
+        print(f"Testing command: '{test_cmd}'")
+        match_result = store.match_command(test_cmd)
+        
+        if match_result:
+            intent, variables = match_result
+            print(f"✅ MATCHED: {test_cmd}")
+            if variables:
+                print(f"  Variables: {variables}")
+            print(f"  Intent: {intent}")
+        else:
+            print(f"❌ NOT MATCHED: {test_cmd}")
+        print()
     
-    if match_result:
-        intent, variables = match_result
-        print(f"✅ Matched: {new_code_command}")
-        print(f"  Intent: {intent}")
-        print(f"  Variables: {variables}")
-    else:
-        print(f"❌ Failed to match: {new_code_command}")
-    
-    # Test non-matching command
-    non_matching = "Delete all files in the tmp directory"
-    match_result = store.match_command(non_matching)
-    
-    if not match_result:
-        print(f"✅ Correctly did not match: {non_matching}")
-    else:
-        print(f"❌ Incorrectly matched: {non_matching}")
-    
-    print("\nTest complete!")
+    print("Test complete!")
 
 if __name__ == "__main__":
     # Delete the command pattern file if it exists (for clean testing)
@@ -77,7 +114,7 @@ if __name__ == "__main__":
             print(f"Warning: Could not backup patterns: {e}")
     
     try:
-        test_pattern_matching()
+        test_enhanced_pattern_matching()
     finally:
         # Restore the original patterns file if it was backed up
         if os.path.exists("command_patterns_backup.json"):
