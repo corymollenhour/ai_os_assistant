@@ -48,6 +48,8 @@ def main():
             intent, variables = match_result
             log(f"Matched command pattern. Variables: {variables}")
             print(f"🔍 Recognized command pattern (skipping LLM call)")
+            # Flag that this intent came from a pattern
+            from_pattern = True
         else:
             # No match found, use LLM to parse the prompt
             intent = parse_prompt(prompt)
@@ -59,9 +61,11 @@ def main():
             
             # Automatically identify and store certain command patterns
             command_store.add_pattern(prompt, intent, store_command=False)
+            # Flag that this intent came from the LLM
+            from_pattern = False
         
         # Dispatch the command
-        dispatch_command(intent, prompt)
+        dispatch_command(intent, prompt, from_pattern)
 
 if __name__ == "__main__":
     main()
