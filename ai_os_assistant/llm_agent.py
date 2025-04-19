@@ -115,17 +115,31 @@ def generate_code_for_action(intent: dict, user_prompt: str = "") -> dict:
         full_content = "".join(content_parts)
         log("LLM fallback code content (raw):\n" + full_content)
 
-        json_start = full_content.find('{')
-        json_end = full_content.rfind('}') + 1
-        if json_start != -1 and json_end > json_start:
-            json_str = full_content[json_start:json_end]
-            parsed = json.loads(json_str)
-            if parsed.get("action") == "run_code" and "code" in parsed:
-                return parsed
-            else:
-                log("! Parsed response was not valid 'run_code' format.")
+        # Use the same improved regex pattern as in parse_prompt
+        match = re.search(r'(\{(?:[^{}]|(?:\{(?:[^{}]|(?:\{[^{}]*\}))*\}))*\})', full_content, re.DOTALL)
+        if match:
+            json_str = match.group(0).strip()
+            try:
+                parsed = json.loads(json_str)
+                if parsed.get("action") == "run_code" and "code" in parsed:
+                    return parsed
+                else:
+                    log("! Parsed response was not valid 'run_code' format.")
+            except json.JSONDecodeError as e:
+                log(f"!! JSON parsing error in generate_code_for_action: {e}")
+                # Fall back to the original simpler method
+                json_start = full_content.find('{')
+                json_end = full_content.rfind('}') + 1
+                if json_start != -1 and json_end > json_start:
+                    try:
+                        simple_json_str = full_content[json_start:json_end]
+                        parsed = json.loads(simple_json_str)
+                        if parsed.get("action") == "run_code" and "code" in parsed:
+                            return parsed
+                    except:
+                        pass
         else:
-            log("! No complete JSON object found.")
+            log("! No complete JSON object found in fallback code response.")
 
     except Exception as e:
         log(f"!! Failed to generate fallback code: {e}")
