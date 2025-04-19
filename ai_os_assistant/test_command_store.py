@@ -84,9 +84,43 @@ def test_enhanced_pattern_matching():
         "Reboot the system in 5 minutes"
     ]
     
+    # Add a raw command (no variables) to test similarity matching
+    print("\n--- Adding a raw command for similarity testing ---")
+    raw_command = "Show me system information"
+    raw_intent = {
+        "action": "run_code",
+        "code": "import platform; print(platform.uname())"
+    }
+    print(f"Storing raw command: '{raw_command}'")
+    store.add_pattern(raw_command, raw_intent, store_command=True)
+    
+    # Test similar variations of the raw command
+    similar_commands = [
+        "Display system info",
+        "Show system information",
+        "Get my system details"
+    ]
+    
     print("\n--- Testing Pattern Matching with Variations ---")
+    # First test variable-based patterns
     for test_cmd in test_matches:
         print(f"Testing command: '{test_cmd}'")
+        match_result = store.match_command(test_cmd)
+        
+        if match_result:
+            intent, variables = match_result
+            print(f"✅ MATCHED: {test_cmd}")
+            if variables:
+                print(f"  Variables: {variables}")
+            print(f"  Intent: {intent}")
+        else:
+            print(f"❌ NOT MATCHED: {test_cmd}")
+        print()
+    
+    # Now test similarity-based matching
+    print("\n--- Testing Similarity Matching ---")
+    for test_cmd in similar_commands:
+        print(f"Testing similar command: '{test_cmd}'")
         match_result = store.match_command(test_cmd)
         
         if match_result:
