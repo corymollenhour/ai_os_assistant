@@ -64,8 +64,8 @@ def parse_prompt(prompt: str) -> dict:
                 if brace_count == 0:  # We found a complete, balanced JSON object
                     json_str = content[json_start:pos]
                     # Pre-process f-strings to protect them from JSON parser
-                    # Replace f'...' or f"..." patterns temporarily
-                    processed_json = re.sub(r"f(['\"])(.*?)\1", r"\1\2\1", json_str)
+                    # Make sure to preserve the f prefix for f-strings
+                    processed_json = json_str
                     return json.loads(processed_json)
         except json.JSONDecodeError as e:
             log(f"!! JSON parsing error with brace matching approach: {e}")
@@ -75,8 +75,8 @@ def parse_prompt(prompt: str) -> dict:
             match = re.search(r'(\{(?:[^{}]|(?:\{(?:[^{}]|(?:\{[^{}]*\}))*\}))*\})', content, re.DOTALL)
             if match:
                 json_str = match.group(0).strip()
-                # Pre-process any f-strings
-                processed_json = re.sub(r"f(['\"])(.*?)\1", r"\1\2\1", json_str)
+                # Don't strip f prefix from f-strings
+                processed_json = json_str
                 return json.loads(processed_json)
         except json.JSONDecodeError as e:
             log(f"!! JSON parsing error with regex approach: {e} in string: {json_str}")
@@ -86,8 +86,8 @@ def parse_prompt(prompt: str) -> dict:
             simple_match = re.search(r'\{.*?\}', content, re.DOTALL)
             if simple_match:
                 json_str = simple_match.group(0)
-                # Pre-process any f-strings
-                processed_json = re.sub(r"f(['\"])(.*?)\1", r"\1\2\1", json_str)
+                # Don't strip f prefix from f-strings
+                processed_json = json_str
                 return json.loads(processed_json)
         except Exception as e:
             log(f"!! All JSON extraction methods failed: {e}")
@@ -159,9 +159,8 @@ def generate_code_for_action(intent: dict, user_prompt: str = "") -> dict:
                 
                 if brace_count == 0:  # We found a complete, balanced JSON object
                     json_str = full_content[json_start:pos]
-                    # Pre-process f-strings to protect them from JSON parser
-                    # Replace f'...' or f"..." patterns temporarily
-                    processed_json = re.sub(r"f(['\"])(.*?)\1", r"\1\2\1", json_str)
+                    # Don't strip f prefix from f-strings
+                    processed_json = json_str
                     parsed = json.loads(processed_json)
                     if parsed.get("action") == "run_code" and "code" in parsed:
                         return parsed
@@ -175,8 +174,8 @@ def generate_code_for_action(intent: dict, user_prompt: str = "") -> dict:
             match = re.search(r'(\{(?:[^{}]|(?:\{(?:[^{}]|(?:\{[^{}]*\}))*\}))*\})', full_content, re.DOTALL)
             if match:
                 json_str = match.group(0).strip()
-                # Pre-process any f-strings
-                processed_json = re.sub(r"f(['\"])(.*?)\1", r"\1\2\1", json_str)
+                # Don't strip f prefix from f-strings
+                processed_json = json_str
                 parsed = json.loads(processed_json)
                 if parsed.get("action") == "run_code" and "code" in parsed:
                     return parsed
@@ -190,8 +189,8 @@ def generate_code_for_action(intent: dict, user_prompt: str = "") -> dict:
             simple_match = re.search(r'\{.*?\}', full_content, re.DOTALL)
             if simple_match:
                 json_str = simple_match.group(0)
-                # Pre-process any f-strings
-                processed_json = re.sub(r"f(['\"])(.*?)\1", r"\1\2\1", json_str)
+                # Don't strip f prefix from f-strings
+                processed_json = json_str
                 parsed = json.loads(processed_json)
                 if parsed.get("action") == "run_code" and "code" in parsed:
                     return parsed
