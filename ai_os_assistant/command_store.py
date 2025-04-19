@@ -284,14 +284,53 @@ class CommandStore:
     
     def similarity_score(self, s1: str, s2: str) -> float:
         """Calculate the similarity between two strings using sequence matching."""
+        # Dictionary of synonyms for common terms
+        synonyms = {
+            "browser": ["web browser", "internet browser", "chrome", "firefox", "edge", "safari"],
+            "webpage": ["website", "site", "web page", "page", "url", "link"],
+            "search": ["find", "look for", "lookup", "google", "query"],
+            "create": ["make", "new", "generate", "add"],
+            "delete": ["remove", "erase", "get rid of"],
+            "file": ["document", "txt", "text file"]
+        }
+        
         # Normalize the strings by lowercasing and removing common words
-        common_words = {"a", "an", "the", "my", "your", "our", "their", "to", "for", "in", "on", "with", "by", "and", "or"}
+        common_words = {"a", "an", "the", "my", "your", "our", "their", "to", "for", "in", "on", "with", "by", "and", "or", 
+                        "default", "some", "any", "this", "that", "these", "those", "please", "can", "could", "would", "should"}
         
         def normalize(text):
-            words = text.lower().split()
-            return " ".join([w for w in words if w not in common_words])
+            text = text.lower()
+            words = text.split()
+            normalized = [w for w in words if w not in common_words]
             
-        return SequenceMatcher(None, normalize(s1), normalize(s2)).ratio()
+            # Replace words with their canonical form based on synonyms
+            for i, word in enumerate(normalized):
+                for canonical, variants in synonyms.items():
+                    if word == canonical or word in variants:
+                        normalized[i] = canonical
+                        break
+            
+            return " ".join(normalized)
+            
+        # Use the normalized strings for comparison
+        norm_s1 = normalize(s1)
+        norm_s2 = normalize(s2)
+        
+        # Get basic similarity
+        basic_sim = SequenceMatcher(None, norm_s1, norm_s2).ratio()
+        
+        # Check for key phrases/words overlap
+        words1 = set(norm_s1.split())
+        words2 = set(norm_s2.split())
+        common_words = words1.intersection(words2)
+        
+        # If they share several key words, increase similarity
+        word_overlap = len(common_words) / max(len(words1), len(words2))
+        
+        # Combine the scores, giving more weight to word overlap
+        combined_score = (basic_sim * 0.6) + (word_overlap * 0.4)
+        
+        return combined_score
     
     def find_best_raw_command_match(self, command: str, category: str) -> Optional[Tuple[dict, float]]:
         """Find the best matching raw command in a category based on similarity."""
@@ -307,8 +346,17 @@ class CommandStore:
                 score = self.similarity_score(command, raw_command)
                 
                 # Consider it a match if the similarity is high enough
-                # Lower the threshold to catch more similar commands
-                if score > 0.7 and score > best_score:
+                # Lower the threshold further and check for common action words
+                if score > 0.65 and score > best_score:
+                    best_score = score
+                    best_pattern = pattern_data
+            
+            # Also try matching against example commands if they exist
+            elif "example_command" in pattern_data:
+                example_command = pattern_data["example_command"]
+                score = self.similarity_score(command, example_command)
+                
+                if score > 0.65 and score > best_score:
                     best_score = score
                     best_pattern = pattern_data
         
@@ -330,11 +378,14 @@ class CommandStore:
         # First, try to detect the command category
         primary_category = self.detect_category(command)
         
-        # Also check file_creation when category is uncertain
+        # Check across multiple categories for better matching
         categories_to_check = [primary_category]
-        if primary_category == "custom_command":
-            # Add other common categories to check
-            categories_to_check.extend(["file_creation", "open_webpage", "search_query"])
+        
+        # Always check these common categories regardless of primary category
+        common_categories = ["open_webpage", "file_creation", "search_query", "program_launch"]
+        for cat in common_categories:
+            if cat not in categories_to_check:
+                categories_to_check.append(cat)
         
         # Try to match against patterns in each category to check
         for category in categories_to_check:
