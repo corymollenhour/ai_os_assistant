@@ -9,7 +9,8 @@
       "variables": [
         "filename"
       ],
-      "example_command": "Create a file named Cory.txt"
+      "example_command": "Create a file named Cory.txt",
+      "raw_command": "Create a file named Cory.txt"
     }
   ],
   "open_webpage": [
@@ -22,7 +23,22 @@
       "variables": [
         "url"
       ],
-      "example_command": "Generate Python code using Selenium that:- Opens Chrome- Goes to https://x.com- Waits for page load- Types \"Hello world from my assistant\" in the post composer- Clicks the Tweet buttonAssume the user is already logged in. No markdown. Output as:{ \"action\": \"run_code\", \"code\": \"<python code>\" }."
+      "example_command": "Generate Python code using Selenium that:- Opens Chrome- Goes to https://x.com- Waits for page load- Types \"Hello world from my assistant\" in the post composer- Clicks the Tweet buttonAssume the user is already logged in. No markdown. Output as:{ \"action\": \"run_code\", \"code\": \"<python code>\" }.",
+      "raw_command": "Generate Python code using Selenium that:- Opens Chrome- Goes to https://x.com- Waits for page load- Types \"Hello world from my assistant\" in the post composer- Clicks the Tweet buttonAssume the user is already logged in. No markdown. Output as:{ \"action\": \"run_code\", \"code\": \"<python code>\" }."
+    }
+  ],
+  "custom_command": [
+    {
+      "pattern": "create {number} files named 1 through {number}",
+      "intent_template": {
+        "action": "run_code",
+        "code": "for i in range(1, 11):\n    open(str(i) + '.txt', 'w').close()"
+      },
+      "variables": [
+        "number"
+      ],
+      "example_command": "create 10 files named 1 through 10",
+      "raw_command": "create 10 files named 1 through 10"
     }
   ]
 }
