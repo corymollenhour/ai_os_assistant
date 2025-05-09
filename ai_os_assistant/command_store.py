@@ -406,7 +406,9 @@ class CommandStore:
                     regex_pattern = re.escape(pattern_str)
                     for var in variables:
                         placeholder = re.escape(f"{{{var}}}")
-                        regex_pattern = regex_pattern.replace(placeholder, f"(?P<{var}>.+?)")
+                        # Replace only the first occurrence to prevent redefinition of group name
+                        if placeholder in regex_pattern:
+                            regex_pattern = re.sub(placeholder, f"(?P<{var}>.+?)", regex_pattern, count=1)
                     
                     # Make matching more flexible
                     # Allow any whitespace between words
@@ -457,7 +459,9 @@ class CommandStore:
                 regex_pattern = re.escape(pattern_str)
                 for var in variables:
                     placeholder = re.escape(f"{{{var}}}")
-                    regex_pattern = regex_pattern.replace(placeholder, f"(?P<{var}>.+?)")
+                    # Replace only the first occurrence to prevent redefinition of group name
+                    if placeholder in regex_pattern:
+                        regex_pattern = re.sub(placeholder, f"(?P<{var}>.+?)", regex_pattern, count=1)
                 
                 match = re.match(f"^{regex_pattern}$", command)
                 if match:
