@@ -116,20 +116,20 @@ def run_tests():
             print(f"\n>>> EXECUTING COMMAND: {cmd_to_test}", flush=True)
         
             if process.stdin and not process.stdin.closed:
-            try:
-                process.stdin.write(cmd_to_test + "\n")
-                process.stdin.flush()
-            except BrokenPipeError:
-                print(f"Error: Broken pipe when trying to send command: {cmd_to_test}. Assistant may have crashed.", flush=True)
-                break # Stop processing further commands
-            except Exception as e:
-                print(f"Error writing to assistant's stdin: {e}", flush=True)
+                try:
+                    process.stdin.write(cmd_to_test + "\n")
+                    process.stdin.flush()
+                except BrokenPipeError:
+                    print(f"Error: Broken pipe when trying to send command: {cmd_to_test}. Assistant may have crashed.", flush=True)
+                    break # Stop processing further commands
+                except Exception as e:
+                    print(f"Error writing to assistant's stdin: {e}", flush=True)
+                    break
+            else:
+                print("Error: Cannot write to assistant's stdin (it's closed or None).", flush=True)
                 break
-        else:
-            print("Error: Cannot write to assistant's stdin (it's closed or None).", flush=True)
-            break
         
-        print(f"--- Assistant Output for '{cmd_to_test}' ---", flush=True)
+            print(f"--- Assistant Output for '{cmd_to_test}' ---", flush=True)
         read_until_prompt(process)
         print(f"--- End Assistant Output for '{cmd_to_test}' ---\n", flush=True)
         # time.sleep(0.1) # Optional small delay if needed for stability
