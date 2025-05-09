@@ -110,11 +110,12 @@ def run_tests():
         for cmd_to_test in test_commands:
             if process.poll() is not None: # Check if the assistant process terminated prematurely
                 print(f"Error: Assistant process terminated unexpectedly during test execution. Last exit code: {process.returncode}", flush=True)
-            break
+                break # Correctly indented to be conditional
 
-        print(f"\n>>> EXECUTING COMMAND: {cmd_to_test}", flush=True)
+            # This print statement and subsequent logic are now correctly part of the loop's iterated body
+            print(f"\n>>> EXECUTING COMMAND: {cmd_to_test}", flush=True)
         
-        if process.stdin and not process.stdin.closed:
+            if process.stdin and not process.stdin.closed:
             try:
                 process.stdin.write(cmd_to_test + "\n")
                 process.stdin.flush()
