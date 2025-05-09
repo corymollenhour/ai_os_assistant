@@ -161,6 +161,15 @@
       ],
       "example_command": "create 10 files named 1 through 10",
       "raw_command": "create 10 files named 1 through 10"
+    },
+    {
+      "raw_command": "Run the calculator program",
+      "pattern": "Run the calculator program",
+      "intent_template": {
+        "action": "run_code",
+        "code": "import os; os.system('calc')"
+      },
+      "variables": []
     }
   ]
 }
