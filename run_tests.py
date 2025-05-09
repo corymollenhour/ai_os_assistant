@@ -45,27 +45,37 @@ def run_tests():
         print(f"An unexpected error occurred while starting the assistant: {e}")
         return
 
-    def read_until_prompt(proc, prompt_marker=">"):
-        # Reads and prints lines from proc.stdout until a line ending with prompt_marker is found.
-        output_buffer = []
-        while proc.stdout: # Check if stdout is available
-            line = proc.stdout.readline() # Reads one line, including newline
-            if not line:  # Indicates EOF or that the process might have closed stdout
-                # Check stderr for any final messages if stdout is closed
-                if proc.stderr:
-                    err_output = proc.stderr.read() # Read all remaining stderr
-                    if err_output:
-                        print(f"STDERR (while reading prompt): {err_output.strip()}", flush=True)
+    def read_until_prompt(proc, prompt_sequence="> "): # Changed prompt_marker to prompt_sequence
+        # Reads and prints characters from proc.stdout until prompt_sequence is detected.
+        output_chars = []    # To store all characters read for returning
+        char_buffer = []     # To match against prompt_sequence
+
+        while proc.stdout: # Check if stdout is available and not closed
+            try:
+                char = proc.stdout.read(1) # Read one character
+            except Exception as e:
+                print(f"\nError reading character from stdout: {e}", flush=True)
+                break # Exit loop on read error
+
+            if not char:  # Indicates EOF or that the process might have closed stdout
+                print("\nDiagnostic: stdout returned EOF.", flush=True)
+                # stderr will be handled by process.communicate() later if process terminates.
+                # Avoid blocking here on stderr.read().
                 break
             
-            print(line, end='', flush=True) # Print assistant's output line by line
-            output_buffer.append(line)
+            print(char, end='', flush=True) # Print assistant's output character by character
+            output_chars.append(char)
+            char_buffer.append(char)
             
-            # The prompt from main.py's input("> ") is "> " followed by a newline.
-            # So, a stripped line equal to ">" indicates the prompt.
-            if line.strip() == prompt_marker:
+            # Keep char_buffer the same size as prompt_sequence for matching
+            if len(char_buffer) > len(prompt_sequence):
+                char_buffer.pop(0)
+            
+            # Check if the current buffer matches the prompt_sequence
+            if "".join(char_buffer) == prompt_sequence:
                 break
-        return "".join(output_buffer)
+        
+        return "".join(output_chars)
 
     # Read and display initial output from the assistant (welcome messages, first prompt)
     print("\n--- Assistant Output (Initial Startup) ---", flush=True)
