@@ -73,9 +73,13 @@ def run_tests():
     print("--- End Assistant Output (Initial Startup) ---\n", flush=True)
 
     # Read test commands from the file
+    test_commands = [] # Initialize to ensure it's defined
     try:
         with open(full_test_cases_path, 'r') as f:
             test_commands = [line.strip() for line in f if line.strip() and not line.startswith('#')]
+        print(f"Diagnostic: Found {len(test_commands)} test commands in '{full_test_cases_path}'.", flush=True)
+        if not test_commands:
+            print(f"Diagnostic: No executable test commands loaded. Check file content and ensure lines are not all comments or empty.", flush=True)
     except FileNotFoundError:
         print(f"Error: Test cases file not found at {full_test_cases_path}", flush=True)
         if process.stdin and not process.stdin.closed:
@@ -93,10 +97,19 @@ def run_tests():
         process.wait()
         return
 
-    # Execute each test command
-    for cmd_to_test in test_commands:
-        if process.poll() is not None: # Check if the assistant process terminated prematurely
-            print(f"Error: Assistant process terminated unexpectedly. Last exit code: {process.returncode}", flush=True)
+    # Diagnostic: Check process status before starting command loop
+    initial_poll_status = process.poll()
+    print(f"Diagnostic: AI Assistant process status before command loop: {'Terminated with code ' + str(initial_poll_status) if initial_poll_status is not None else 'Running'}", flush=True)
+
+    if initial_poll_status is not None:
+        print("Error: AI Assistant process terminated before test commands could be run.", flush=True)
+    elif not test_commands:
+        print("Info: No test commands to execute.", flush=True)
+    else:
+        # Execute each test command
+        for cmd_to_test in test_commands:
+            if process.poll() is not None: # Check if the assistant process terminated prematurely
+                print(f"Error: Assistant process terminated unexpectedly during test execution. Last exit code: {process.returncode}", flush=True)
             break
 
         print(f"\n>>> EXECUTING COMMAND: {cmd_to_test}", flush=True)
