@@ -2,6 +2,70 @@
 
 A Python-based assistant that uses local LLMs to understand and execute system commands.
 
+## Requirements
+
+Before you begin, ensure you have the following installed:
+
+### System Requirements
+- Operating System: Windows 10/11, macOS, or Linux
+- RAM: Minimum 16GB (32GB recommended for larger LLM models)
+- Storage: At least 10GB free space for LLM models
+- Internet connection (for initial setup and downloads)
+
+### Required Software
+- Python 3.8 or higher ([Download Python](https://www.python.org/downloads/))
+- Ollama ([Download Ollama](https://ollama.ai/download))
+- Git (optional, for cloning the repository)
+
+## Installation
+
+1. **Install Python**
+   - Download Python from [python.org](https://www.python.org/downloads/)
+   - During installation, ensure you check "Add Python to PATH"
+   - Verify installation by opening a terminal/command prompt and running:
+     ```
+     python --version
+     ```
+
+2. **Install Ollama**
+   - Download Ollama from [ollama.ai/download](https://ollama.ai/download)
+   - Follow the installation instructions for your operating system
+   - Verify installation by opening a terminal/command prompt and running:
+     ```
+     ollama --version
+     ```
+
+3. **Get the AI OS Assistant**
+   - Clone the repository (if you have Git):
+     ```
+     git clone [repository-url]
+     ```
+   - Or download and extract the ZIP file from the repository
+
+4. **Install Python Dependencies**
+   - Open a terminal/command prompt in the project directory
+   - Run:
+     ```
+     pip install -r ai_os_assistant/requirements.txt
+     ```
+
+5. **Setup Ollama and LLM**
+   - Enable Ollama logging (Windows only):
+     ```
+     $env:OLLAMA_DEBUG="1"
+     ```
+   - Pull and run your chosen LLM model:
+     ```
+     ollama pull deepseek-r1:32b  # or mistral
+     ollama run deepseek-r1:32b   # or mistral
+     ```
+
+6. **Run the Assistant**
+   - Execute the provided batch file:
+     ```
+     run_ai_assistant.bat
+     ```
+
 ## Features
 
 - Natural language processing for system commands
@@ -9,15 +73,6 @@ A Python-based assistant that uses local LLMs to understand and execute system c
 - Command pattern storage to reduce LLM wait times
 - Automatic command categorization and variable extraction
 - Extensible action system
-
-## Setup Instructions
-
-1. Install Python (latest version recommended)
-2. Install required dependencies: `pip install requests`
-3. Install Ollama and a suitable LLM (deepseek-r1:32b or mistral recommended)
-4. Set Ollama logging (Windows): `$env:OLLAMA_DEBUG="1"`
-5. Run Ollama with the selected model: `ollama run deepseek-r1:32b` or `ollama run mistral`
-6. Run the assistant: `run_ai_assistant.bat`
 
 ## Command Pattern Storage
 
@@ -78,3 +133,21 @@ To add new command actions, modify the following files:
 - `dispatcher.py`: Add a new action handler
 - `file_manager.py`: Implement the actual functionality
 - `command_store.py`: Add pattern recognition for the new action type
+
+## Troubleshooting
+
+Common issues and solutions:
+
+1. **Python not found**
+   - Ensure Python is added to PATH during installation
+   - Try restarting your terminal/command prompt
+
+2. **Ollama connection issues**
+   - Verify Ollama is running (`ollama serve`)
+   - Check if the correct model is installed (`ollama list`)
+
+3. **LLM model errors**
+   - Ensure you have sufficient RAM for your chosen model
+   - Try using a smaller model like 'mistral' if you experience issues
+
+For more help, please check the [issues section](repository-issues-url) of our repository.
